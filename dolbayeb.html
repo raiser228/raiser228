@@ -1,0 +1,391 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Професії Майбутнього 2025</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff, #00ffff);
+            background-size: 400%;
+            animation: gradient 15s ease infinite;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+            color: #ffffff;
+        }
+
+        .nav-link:hover {
+            transform: scale(1.1);
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background: #00ffff;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            transition: all 0.5s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            padding: 2rem;
+        }
+
+        .card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.7);
+        }
+
+        .card p, .card li {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.8), 0 0 30px rgba(0, 255, 255, 0.5);
+            letter-spacing: 2px;
+            color: #ffffff;
+        }
+
+        .hero {
+            background: url('https://images.unsplash.com/photo-1666875753105-c63a6f3bdc86') no-repeat center/cover;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .glow-button {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            color: #000;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .glow-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff;
+            color: #fff;
+        }
+
+        .glow-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .glow-button:hover::before {
+            left: 100%;
+        }
+
+        .quote {
+            background: rgba(0, 255, 255, 0.2);
+            border-left: 4px solid #00ffff;
+            padding: 15px;
+            border-radius: 10px;
+            font-style: italic;
+            color: #e0e0e0;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .animate-card {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        section {
+            padding-top: 100px; /* Offset for fixed nav */
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-black bg-opacity-60 backdrop-blur-lg z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold tracking-wider text-white">Професії 2025</h1>
+            <div class="space-x-8">
+                <a href="#home" class="nav-link text-lg">Головна</a>
+                <a href="#accountant" class="nav-link text-lg">Бухгалтер</a>
+                <a href="#potter" class="nav-link text-lg">Гончар</a>
+                <a href="#stylist" class="nav-link text-lg">Стиліст</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content animate-hero">
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 section-title">Професії Майбутнього 2025</h1>
+            <p class="text-xl md:text-3xl mb-10 tracking-wide">Відкрий кар’єри, що формують новий світ!</p>
+            <a href="#accountant" class="glow-button text-lg">Дізнайся більше</a>
+        </div>
+    </section>
+
+    <!-- Accountant Section -->
+    <section id="accountant" class="py-24">
+        <div class="container mx-auto px-4">
+            <h2 class="text-5xl font-bold text-center mb-16 section-title animate-card">Головний Бухгалтер</h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="card animate-card">
+                    <img src="https://images.unsplash.com/photo-1554224155-8a0ae1b6f5b2" alt="Accountant" class="w-full h-72 object-cover rounded-lg mb-6 shadow-lg">
+                    <h3 class="text-3xl font-semibold mb-4">Суть роботи</h3>
+                    <p>Головний бухгалтер у 2025 році — це фінансовий стратег, який керує економічним здоров’ям компанії. Вони не лише ведуть облік і готують звіти, але й використовують штучний інтелект для аналізу даних, прогнозування ринкових трендів і оптимізації податків. Наприклад, AI-системи допомагають автоматизувати обробку транзакцій, дозволяючи бухгалтеру зосередитися на плануванні інвестицій чи оцінці ризиків. Вони співпрацюють із топ-менеджментом, розробляючи фінансові стратегії, і забезпечують відповідність міжнародним стандартам, як МСФЗ. Ця роль вимагає аналітичного розуму, технологічної грамотності та вміння керувати командою.</p>
+                </div>
+                <div class="card animate-card">
+                    <h3 class="text-3xl font-semibold mb-4">Необхідні навички</h3>
+                    <ul class="list-disc pl-6 mb-6">
+                        <li>Експертиза в МСФЗ та національних стандартах</li>
+                        <li>Вміння працювати з ERP-системами (1С, SAP)</li>
+                        <li>Аналітичне мислення та увага до деталей</li>
+                        <li>Лідерські навички для управління командою</li>
+                        <li>Знання AI для автоматизації та аналізу</li>
+                    </ul>
+                    <h3 class="text-3xl font-semibold mb-4">Як здобути навички</h3>
+                    <p>1. Отримайте ступінь із фінансів чи економіки.<br>2. Пройдіть курси МСФЗ на Coursera чи ACCA.<br>3. Стажуйтеся в аудиторських фірмах.<br>4. Вивчайте AI на Udemy чи DataCamp.<br>5. Отримайте сертифікат CIMA для кар’єри.</p>
+                </div>
+            </div>
+            <div class="mt-12 text-center animate-card">
+                <p class="quote text-lg mx-auto max-w-2xl">"Фінанси — це мова бізнесу, а бухгалтер — її перекладач у майбутнє." — AI-аналітик 2025</p>
+                <p class="mt-8 text-xl">Чому це важливо? Бухгалтери стають ключовими гравцями в цифровій економіці, поєднуючи технології та стратегію.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Potter Section -->
+    <section id="potter" class="py-24 bg-gradient-to-r from-purple-800 to-indigo-900">
+        <div class="container mx-auto px-4">
+            <h2 class="text-5xl font-bold text-center mb-16 section-title animate-card">Гончар</h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="card animate-card">
+                    <img src="https://images.unsplash.com/photo-1605723517503-3cadb131ae26" alt="Potter" class="w-full h-72 object-cover rounded-lg mb-6 shadow-lg">
+                    <h3 class="text-3xl font-semibold mb-4">Суть роботи</h3>
+                    <p>Гончар у 2025 році — це митець, який поєднує традиційну кераміку з інноваціями. Вони створюють унікальні вироби — від посуду до декору — використовуючи класичні техніки та 3D-друк глиною. Попит на екологічні, ручні продукти зростає, адже люди цінують індивідуальність у світі масового виробництва. Наприклад, гончар може розробити серію посуду з переробленої глини або створити цифровий дизайн для 3D-принтера, який потім вручну глазурує. Вони також просувають роботи через Etsy чи Instagram, співпрацюючи з брендами сталого дизайну.</p>
+                </div>
+                <div class="card animate-card">
+                    <h3 class="text-3xl font-semibold mb-4">Необхідні навички</h3>
+                    <ul class="list-disc pl-6 mb-6">
+                        <li>Майстерність роботи з глиною та глазур’ю</li>
+                        <li>Знання 3D-моделювання (Blender)</li>
+                        <li>Креативність і чуття трендів</li>
+                        <li>Маркетинг у соцмережах</li>
+                        <li>Екологічний дизайн</li>
+                    </ul>
+                    <h3 class="text-3xl font-semibold mb-4">Як здобути навички</h3>
+                    <p>1. Пройдіть курси гончарства в студіях.<br>2. Вивчайте 3D-моделювання на YouTube.<br>3. Продавайте вироби на Etsy.<br>4. Відвідуйте майстер-класи з кераміки.<br>5. Вивчайте екодизайн на Coursera.</p>
+                </div>
+            </div>
+            <div class="mt-12 text-center animate-card">
+                <p class="quote text-lg mx-auto max-w-2xl">"Глина в руках гончара — це мистецтво, що оживає в цифрову еру." — Майбутній митець</p>
+                <p class="mt-8 text-xl">Чому це актуально? Handmade-вироби стають символом сталості та індивідуальності.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stylist Section -->
+    <section id="stylist" class="py-24">
+        <div class="container mx-auto px-4">
+            <h2 class="text-5xl font-bold text-center mb-16 section-title animate-card">Стиліст</h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="card animate-card">
+                    <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f" alt="Stylist" class="w-full h-72 object-cover rounded-lg mb-6 shadow-lg">
+                    <h3 class="text-3xl font-semibold mb-4">Суть роботи</h3>
+                    <p>Стиліст у 2025 році — це креатор, який допомагає людям виражати себе через моду, використовуючи AR/VR і AI. Вони створюють персоналізовані образи, підбираючи одяг і аксесуари, і пропонують віртуальні примірки через AR-додатки. AI аналізує тренди, щоб стиліст міг створювати актуальні образи, наприклад, для метавсесвіту чи реальних подій. Вони також просувають свій бренд у соцмережах, співпрацюючи з інфлюенсерами чи модними платформами. Ця професія поєднує творчість, технології та комунікацію.</p>
+                </div>
+                <div class="card animate-card">
+                    <h3 class="text-3xl font-semibold mb-4">Необхідні навички</h3>
+                    <ul class="list-disc pl-6 mb-6">
+                        <li>Чуття стилю та знання трендів</li>
+                        <li>Робота з AR/VR-технологіями</li>
+                        <li>Комунікативні навички</li>
+                        <li>Психологія кольору та дизайн</li>
+                        <li>Маркетинг у соцмережах</li>
+                    </ul>
+                    <h3 class="text-3xl font-semibold mb-4">Як здобути навички</h3>
+                    <p>1. Пройдіть курси моди в Istituto Marangoni.<br>2. Вивчайте AR/VR на Udemy.<br>3. Створюйте образи для портфоліо.<br>4. Ведіть Instagram чи TikTok.<br>5. Вивчайте психологію кольору на Coursera.</p>
+                </div>
+            </div>
+            <div class="mt-12 text-center animate-card">
+                <p class="quote text-lg mx-auto max-w-2xl">"Стиль — це не просто одяг, це спосіб розповісти світу, хто ти є." — Стиліст 2025</p>
+                <p class="mt-8 text-xl">Чому це перспективно? Стилісти стають провідниками у цифровій моді та персоналізації.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black bg-opacity-60 py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-lg">© 2025 Професії Майбутнього. Створено для нового світу.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth Scroll with Offset for Fixed Nav
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const target = document.querySelector(targetId);
+                const navHeight = document.querySelector('nav').offsetHeight;
+                const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navHeight;
+
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // GSAP Animations
+        gsap.from(".animate-hero", {
+            opacity: 0,
+            y: 100,
+            scale: 0.8,
+            duration: 1.8,
+            ease: "power4.out"
+        });
+
+        gsap.utils.toArray(".animate-card").forEach(card => {
+            gsap.to(card, {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                duration: 1.2,
+                delay: 0.2,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // Parallax Effect on Hero
+        gsap.to(".hero", {
+            backgroundPosition: "50% 100%",
+            scrollTrigger: {
+                trigger: ".hero",
+                scrub: true
+            }
+        });
+
+        // Neon Glow on Cards
+        gsap.utils.toArray(".card").forEach(card => {
+            card.addEventListener("mouseenter", () => {
+                gsap.to(card, {
+                    boxShadow: "0 0 60px rgba(0, 255, 255, 0.8)",
+                    duration: 0.3
+                });
+            });
+            card.addEventListener("mouseleave", () => {
+                gsap.to(card, {
+                    boxShadow: "0 0 20px rgba(0, 255, 255, 0.3)",
+                    duration: 0.3
+                });
+            });
+        });
+    </script>
+</body>
+</html>
